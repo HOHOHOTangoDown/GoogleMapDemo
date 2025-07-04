@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">DemoMap</string>
+    <string name="location_label">location</string>
+    <string name="start_navigation">start navigation</string>
 </resources>
