@@ -178,6 +178,12 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
         // 监听 My Location 变化
         map.setOnMyLocationChangeListener { location ->
             startLocation = LatLng(location.latitude, location.longitude)
+
+            // 添加新位置到行程轨迹
+            startLocation?.let {
+                addPointToTravelPath(it)
+            }
+            // 无数据部分导航虚线
             updateAssistRouteIfNeeded()
         }
     }
@@ -354,14 +360,15 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             if (location != null) {
                 lastLocation = location
-                // 添加起点到行程轨迹
-                travelPathPoints.add(startLocation!!)
+
 
                 // 1. 先请求当前位置到起点的辅助路径（通常是同一点，但保留逻辑）
                 requestDirections(location, destinationMarker!!.position)
 
                 startLocation?.let {
                     updateAssistRouteIfNeeded()
+                    // 添加起点到行程轨迹
+                    travelPathPoints.add(it)
                 }
 
                 // 2. 开始位置更新
@@ -524,11 +531,6 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
                     }
                     lastLocation = newLocation
 
-                    // 更新起点位置（My Location）
-                    val currentLocation = LatLng(newLocation.latitude, newLocation.longitude)
-
-                    // 添加新位置到行程轨迹
-                    addPointToTravelPath(currentLocation)
 
                     // 更新地图上的位置
                     updateMapLocation(newLocation)
