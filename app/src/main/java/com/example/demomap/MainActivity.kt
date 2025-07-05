@@ -94,6 +94,9 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
     private val DASH_LENGTH_PX = 20f           // 虚线线段长度
     private val GAP_LENGTH_PX = 10f            // 虚线间隔长度
 
+    private var travelPath: Polyline? = null           // 用户实际行程路线
+    private val travelPathPoints = mutableListOf<LatLng>()  // 行程坐标点集合
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.my_location_demo)
@@ -131,17 +134,17 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
         if (isPermissionDialogShowing) return
 
         AlertDialog.Builder(this)
-            .setTitle("定位权限请求")
-            .setMessage("为了使用导航功能，需要获取您的位置信息")
-            .setPositiveButton("确定") { dialog, _ ->
+            .setTitle("Location Permission Request")
+            .setMessage("To use the navigation function, we need to obtain your location information.")
+            .setPositiveButton("Confir") { dialog, _ ->
                 isPermissionDialogShowing = false
                 requestLocationPermission()
                 dialog.dismiss()
             }
-            .setNegativeButton("取消") { dialog, _ ->
+            .setNegativeButton("Confirm") { dialog, _ ->
                 isPermissionDialogShowing = false
                 dialog.dismiss()
-                Toast.makeText(this, "没有定位权限将无法使用导航功能", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Without location permission, the navigation function cannot be used.", Toast.LENGTH_SHORT).show()
             }
             .setOnDismissListener { isPermissionDialogShowing = false }
             .show()
@@ -218,16 +221,16 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
 
     private fun showSettingsDialog() {
         AlertDialog.Builder(this)
-            .setTitle("需要定位权限")
-            .setMessage("您已拒绝授予定位权限且选择不再询问，" +
-                    "请在设置中手动开启定位权限以使用导航功能")
-            .setPositiveButton("设置") { dialog, _ ->
+            .setTitle("Location permission is required.")
+            .setMessage("You have refused to grant location permission and chosen not to be asked again. " +
+                    "Please manually enable location permission in the settings to use the navigation function.")
+            .setPositiveButton("go to Setting") { dialog, _ ->
                 dialog.dismiss()
                 openAppSettings()
             }
-            .setNegativeButton("取消") { dialog, _ ->
+            .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
-                Toast.makeText(this, "没有定位权限将无法使用导航功能", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Without location permission, the navigation function cannot be used.", Toast.LENGTH_SHORT).show()
             }
             .show()
     }
@@ -344,10 +347,15 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
         startTime = System.currentTimeMillis()
         totalDistance = 0f
 
+        // 清空之前的行程记录
+        travelPathPoints.clear()
+
         // 获取当前位置并开始导航
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             if (location != null) {
                 lastLocation = location
+                // 添加起点到行程轨迹
+                travelPathPoints.add(startLocation!!)
 
                 // 1. 先请求当前位置到起点的辅助路径（通常是同一点，但保留逻辑）
                 requestDirections(location, destinationMarker!!.position)
@@ -389,7 +397,7 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
     private fun requestDirections(origin: Location, destination: LatLng) {
         val url = getUrl(origin.latitude, origin.longitude, destination.latitude, destination.longitude)
         if (TextUtils.isEmpty(url)) {
-            Toast.makeText(this, "获取路线失败: 参数错误", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Route Acquisition Failed: Parameter Error", Toast.LENGTH_SHORT).show()
             return
         }
         // 使用Retrofit或Volley发送HTTP请求
@@ -406,7 +414,7 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
                 drawRoute(result)
             },
             { error ->
-                Toast.makeText(this, "获取路线失败: ${error.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Route Acquisition Failed: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         )
 
@@ -516,6 +524,12 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
                     }
                     lastLocation = newLocation
 
+                    // 更新起点位置（My Location）
+                    val currentLocation = LatLng(newLocation.latitude, newLocation.longitude)
+
+                    // 添加新位置到行程轨迹
+                    addPointToTravelPath(currentLocation)
+
                     // 更新地图上的位置
                     updateMapLocation(newLocation)
 
@@ -534,6 +548,27 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
                 locationCallback,
                 Looper.getMainLooper()
             )
+        }
+    }
+
+    private fun addPointToTravelPath(point: LatLng) {
+        // 添加新点
+        travelPathPoints.add(point)
+
+        // 绘制行程轨迹
+        drawTravelPath()
+    }
+
+    private fun drawTravelPath() {
+        travelPath?.remove()
+
+        if (travelPathPoints.size >= 2) {
+            val lineOptions = PolylineOptions()
+            lineOptions.color(Color.RED)     // 红色表示实际行程
+            lineOptions.width(10f)            // 线宽
+            lineOptions.addAll(travelPathPoints)
+
+            travelPath = map.addPolyline(lineOptions)
         }
     }
 
@@ -585,12 +620,12 @@ class MainActivity : AppCompatActivity(), OnMyLocationButtonClickListener,
         dialog.setContentView(R.layout.dialog_trip_summary)
 
         // 设置时间和距离
-        dialog.findViewById<TextView>(R.id.trip_time).text = "行程时间: $timeString"
+        dialog.findViewById<TextView>(R.id.trip_time).text = "Travel Time: $timeString"
         dialog.findViewById<TextView>(R.id.trip_distance).text =
-            "总距离: ${String.format("%.2f", totalDistance/1000)} 公里"
-
-        // 在摘要对话框中显示路线地图
-        // 可以使用MapView或重新绘制路线
+            "Total Distance: ${String.format("%.2f", totalDistance/1000)} KM"
+        dialog.findViewById<Button>(R.id.close_button).setOnClickListener {
+            dialog.dismiss()
+        }
 
         dialog.show()
     }

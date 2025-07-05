@@ -8,24 +8,18 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="行程摘要"
+        android:text="Trip Summary"
         android:textSize="20sp"
         android:fontFamily="sans-serif-medium"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp" />
 
-    <fragment
-        android:id="@+id/summary_map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_marginBottom="16dp" />
 
     <TextView
         android:id="@+id/trip_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="行程时间: --"
+        android:text="Travel Time: --"
         android:textSize="16sp"
         android:layout_marginBottom="8dp" />
 
@@ -33,14 +27,14 @@
         android:id="@+id/trip_distance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="总距离: --"
+        android:text="Total Distance: --"
         android:textSize="16sp" />
 
     <Button
         android:id="@+id/close_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="关闭"
+        android:text="close"
         android:layout_gravity="end"
         android:layout_marginTop="16dp" />
 </LinearLayout>
